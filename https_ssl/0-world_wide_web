@@ -5,6 +5,8 @@
 display_info() {
     local domain="$1"
     local subdomain="$2"
+    
+    # Use awk to extract the record type and destination
     local record_type=$(dig +short -t CNAME "$subdomain.$domain" | awk '{print length($0) > 0 ? "CNAME" : "A"}')
     local destination=$(dig +short "$subdomain.$domain" | head -n 1)
 
