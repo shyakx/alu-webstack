@@ -10,7 +10,7 @@ display_info() {
     local query_result=$(dig +short "$subdomain.$domain")
 
     if [ -n "$query_result" ]; then
-        local record_type=$(dig +short -t CNAME "$subdomain.$domain" | awk '{print length($0) > 0 ? "CNAME" : "A"}')
+        local record_type=$(dig +short -t CNAME "$subdomain.$domain" | grep -q '[a-zA-Z]' && echo "CNAME" || echo "A")
         local destination=$(echo "$query_result" | head -n 1)
         echo "The subdomain $subdomain is a $record_type record and points to $destination"
     else
@@ -39,4 +39,3 @@ else
     # Display information for the specified subdomain
     display_info "$domain" "$subdomain"
 fi
-
