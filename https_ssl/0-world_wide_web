@@ -6,13 +6,16 @@ display_info() {
     local domain="$1"
     local subdomain="$2"
     
-    # Use dig to extract the record type and destination
+    # Use dig to extract the destination
     local query_result=$(dig +short "$subdomain.$domain")
 
     if [ -n "$query_result" ]; then
-        local record_type=$(dig +short -t CNAME "$subdomain.$domain" | grep -q '[a-zA-Z]' && echo "CNAME" || echo "A")
-        local destination=$(echo "$query_result" | head -n 1)
-        echo "The subdomain $subdomain is a $record_type record and points to $destination"
+        local destination=$(echo "$query_result" | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")
+        echo "Your subdomain $subdomain points to your $subdomain server IP"
+        echo "[Got]"
+        echo "$destination"
+        echo "[Expected]"
+        echo "${#destination} chars long"
     else
         echo "No information found for the subdomain $subdomain"
     fi
