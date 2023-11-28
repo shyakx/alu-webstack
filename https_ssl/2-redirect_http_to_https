@@ -1,54 +1,24 @@
 #!/usr/bin/env bash
-# This script configures HAProxy to automatically redirect HTTP traffic to HTTPS.
+# This script configures HAProxy to redirect HTTP traffic to HTTPS
 
-# HAProxy configuration file (/etc/haproxy/haproxy.cfg)
-cat <<EOF > /etc/haproxy/haproxy.cfg
-# Global settings
-global
-    log /dev/log local0
-    log /dev/log local1 notice
-    chroot /var/lib/haproxy
-    stats socket /run/haproxy/admin.sock mode 660 level admin
-    stats timeout 30s
-    user haproxy
-    group haproxy
-    daemon
+# Backup the original HAProxy configuration file
+sudo cp /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.bak
 
-# Default settings
-defaults
-    log global
-    mode http
-    option httplog
-    option dontlognull
-    timeout connect 5000
-    timeout client 50000
-    timeout server 50000
-
-# Frontend configuration
-frontend http_frontend
+# Configure HAProxy for HTTP to HTTPS redirection
+cat <<EOL | sudo tee /etc/haproxy/haproxy.cfg
+frontend www-http
     bind *:80
     mode http
-    option forwardfor
-    option http-server-close
-    option http-pretend-keepalive
-
-    # Redirect HTTP to HTTPS
     redirect scheme https code 301 if !{ ssl_fc }
 
-# Backend configuration (assuming you have an HTTPS backend)
-backend https_backend
-    mode http
-    balance roundrobin
+frontend www-https
+    bind *:443 ssl crt /etc/letsencrypt/live/www.yourdomain.com/fullchain.pem
+    reqadd X-Forwarded-Proto:\ https
+    default_backend www-backend
 
-    # Health check to ensure HAProxy responds with 200 OK
-    option httpchk HEAD / HTTP/1.1\r\nHost:localhost
-    http-check expect status 200
-
-    server backend_server1 127.0.0.1:443 check ssl verify none
-    # Add more backend servers as needed
-
-# Note: You may need to adjust backend server configuration based on your specific setup
-EOF
+backend www-backend
+    server web-server 127.0.0.1:80
+EOL
 
 # Restart HAProxy
-service haproxy restart
+sudo service haproxy restart
