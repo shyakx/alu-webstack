@@ -5,7 +5,14 @@
 DOMAIN="www.shyakx.tech.com"
 
 # Use curl to make an HTTP request and check the status code
-HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://$DOMAIN)
+HTTP_RESPONSE=$(curl -s -w "\nHTTP %{http_code}\n" https://$DOMAIN)
+
+# Extract the HTTP status code from the response
+HTTP_STATUS=$(echo "$HTTP_RESPONSE" | grep -oP 'HTTP \K[0-9]+')
+
+# Print the complete HTTP response for debugging
+echo "Complete HTTP response:"
+echo "$HTTP_RESPONSE"
 
 # Compare the obtained HTTP status with the expected value
 EXPECTED_STATUS="200"
