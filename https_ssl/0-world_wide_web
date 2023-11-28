@@ -1,16 +1,22 @@
 #!/usr/bin/env bash
-# Bash script that will display information about subdomains
-domain () {
-if [ "$2" ];
-then
-    echo -n "The subdomain $2 is a"
-    dig "$2.$1" | grep -A1 'ANSWER SECTION:' | awk '{print " " $4 " record and points to " $5}' | tail -n 1
-else
-    for i in www lb-01 web-01 web-02
-    do
-        echo -n "The subdomain $i is a"
-        dig "$i.$1" | grep -A1 'ANSWER SECTION:' | awk '{print " " $4 " record and points to " $5}' | tail -n 1
-    done
+# This script displays information about subdomains for a given domain
+
+if [ "$#" -lt 1 ]; then
+    echo "Usage: $0 <domain> [subdomain]"
+    exit 1
 fi
-}
-domain "$1" "$2"
+
+domain="$1"
+subdomains=("www" "54.224.230.69" "54.196.173.188" "3.93.200.232")
+
+if [ "$#" -eq 2 ]; then
+    subdomains=("$2")
+fi
+
+for subdomain in "${subdomains[@]}"; do
+    result=$(dig "${subdomain}.${domain}" +short)
+    if [ -n "$result" ]; then
+        record_type=$(dig "${subdomain}.${domain}" | awk '/ANSWER SECTION:/ {getline; print $4}')
+        echo "The subdomain ${subdomain} is a ${record_type} record and points to ${result}"
+    fi
+done
