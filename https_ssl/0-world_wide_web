@@ -5,7 +5,7 @@
 display_info() {
     local domain="$1"
     local subdomain="$2"
-    
+
     # Use dig to extract the destination
     local query_result=$(dig +short "$subdomain.$domain")
 
@@ -14,8 +14,9 @@ display_info() {
         echo "The subdomain $subdomain is a A record and points to $destination"
         echo "[Got]"
         echo "$destination"
+        local expected_length=$(echo "${#destination}")
         echo "[Expected]"
-        echo "${#destination} chars long"
+        echo "${expected_length} chars long"
     else
         echo "No information found for the subdomain $subdomain"
     fi
