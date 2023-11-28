@@ -11,10 +11,9 @@ HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://$DOMAIN)
 EXPECTED_STATUS="200"
 
 if [ "$HTTP_STATUS" = "$EXPECTED_STATUS" ]; then
-    echo "Your load balancer is accepting HTTPS traffic"
+    echo "Your load balancer is accepting HTTPS traffic with status code: $HTTP_STATUS"
 else
     echo "Execution not successful"
     echo "Expected: $EXPECTED_STATUS"
     echo "Got: $HTTP_STATUS"
 fi
-
