@@ -2,7 +2,7 @@
 # Check if the load balancer is accepting HTTPS traffic
 
 # Replace "www.yourdomain.com" with your actual domain
-DOMAIN="www.yourdomain.com"
+DOMAIN="www.shyakx.tech.com"
 
 # Use curl to make an HTTP request and check the status code
 HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://$DOMAIN)
