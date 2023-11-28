@@ -39,7 +39,11 @@ frontend http_frontend
 backend https_backend
     mode http
     balance roundrobin
+
+    # Health check to ensure HAProxy responds with 200 OK
     option httpchk HEAD / HTTP/1.1\r\nHost:localhost
+    http-check expect status 200
+
     server backend_server1 127.0.0.1:443 check ssl verify none
     # Add more backend servers as needed
 
