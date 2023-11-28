@@ -1,41 +1,16 @@
 #!/usr/bin/env bash
-# This script displays information about subdomains for a given domain.
-
-# Function to display information about a subdomain
-display_info() {
-    local domain="$1"
-    local subdomain="$2"
-    
-    # Use dig to extract the record type and destination
-    local query_result=$(dig +short "$subdomain.$domain")
-
-    if [ -n "$query_result" ]; then
-        local record_type=$(dig +short -t CNAME "$subdomain.$domain" | grep -q '[a-zA-Z]' && echo "CNAME" || echo "A")
-        local destination=$(echo "$query_result" | head -n 1)
-        echo "The subdomain $subdomain is a $record_type record and points to $destination"
-    else
-        echo "No information found for the subdomain $subdomain"
-    fi
-}
-
-# Check if required arguments are provided
-if [ "$#" -lt 1 ]; then
-    echo "Usage: $0 <domain> [subdomain]"
-    exit 1
-fi
-
-# Assign arguments to variables
-domain="$1"
-subdomain="$2"
-
-# Display information based on arguments
-if [ -z "$subdomain" ]; then
-    # Display information for default subdomains
-    display_info "$domain" "www"
-    display_info "$domain" "lb-01"
-    display_info "$domain" "web-01"
-    display_info "$domain" "web-02"
+# Bash script that will display information about subdomains
+domain () {
+if [ "$2" ];
+then
+    echo -n "The subdomain $2 is a"
+    dig "$2.$1" | grep -A1 'ANSWER SECTION:' | awk '{print " " $4 " record and points to " $5}' | tail -n 1
 else
-    # Display information for the specified subdomain
-    display_info "$domain" "$subdomain"
+    for i in www lb-01 web-01 web-02
+    do
+        echo -n "The subdomain $i is a"
+        dig "$i.$1" | grep -A1 'ANSWER SECTION:' | awk '{print " " $4 " record and points to " $5}' | tail -n 1
+    done
 fi
+}
+domain "$1" "$2"
