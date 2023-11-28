@@ -22,3 +22,17 @@ EOL
 
 # Restart HAProxy
 sudo service haproxy restart
+
+# Check if HAProxy is accepting HTTPS traffic
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://www.yourdomain.com)
+
+# Compare the obtained HTTP status with the expected value
+EXPECTED_STATUS="200"
+
+if [ "$HTTP_STATUS" = "$EXPECTED_STATUS" ]; then
+    echo "HAProxy is accepting HTTPS traffic"
+else
+    echo "HAProxy is not accepting HTTPS traffic"
+    echo "Expected: $EXPECTED_STATUS"
+    echo "Got: $HTTP_STATUS"
+fi
