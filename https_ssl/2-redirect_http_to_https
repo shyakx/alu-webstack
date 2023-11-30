@@ -1,41 +1,52 @@
-#!/usr/bin/env bash
-# This script configures HAProxy to redirect HTTP traffic to HTTPS
+global
+        log /dev/log    local0
+        log /dev/log    local1 notice
+        chroot /var/lib/haproxy
+        stats socket /run/haproxy/admin.sock mode 660 level admin expose-fd listeners
+        stats timeout 30s
+        user haproxy
+        group haproxy
+        daemon
 
-# Backup the original HAProxy configuration file
-sudo cp /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.bak
+        # Default SSL material locations
+        ca-base /etc/ssl/certs
+        crt-base /etc/ssl/private
 
-# Configure HAProxy for HTTP to HTTPS redirection
-cat <<EOL | sudo tee /etc/haproxy/haproxy.cfg
+        # See: https://ssl-config.mozilla.org/#server=haproxy&server-version=2.0.3&config=intermediate
+        ssl-default-bind-ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384
+        ssl-default-bind-ciphersuites TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
+        ssl-default-bind-options ssl-min-ver TLSv1.2 no-tls-tickets
+
+defaults
+        log     global
+        mode    http
+        option  httplog
+        option  dontlognull
+        timeout connect 5000
+        timeout client  50000
+        timeout server  50000
+        errorfile 400 /etc/haproxy/errors/400.http
+        errorfile 403 /etc/haproxy/errors/403.http
+        errorfile 408 /etc/haproxy/errors/408.http
+        errorfile 500 /etc/haproxy/errors/500.http
+        errorfile 502 /etc/haproxy/errors/502.http
+        errorfile 503 /etc/haproxy/errors/503.http
+        errorfile 504 /etc/haproxy/errors/504.http
 frontend www-http
     bind *:80
     mode http
-    redirect scheme https code 301 if !{ ssl_fc }
-
+    default_backend web-backend
 frontend www-https
-    bind *:443 ssl crt /etc/letsencrypt/live/www.yourdomain.com/fullchain.pem
-    reqadd X-Forwarded-Proto:\ https
-    default_backend www-backend
+    bind *:443 ssl crt /etc/haproxy/morioh.tech.pem
+    http-request set-header X-Forwarded-Proto https
+    acl letsencrypt-acl path_beg /.well-known/acme-challenge/
+    use_backend letsencrypt-backend if letsencrypt-acl
+    default_backend web-backend
 
-backend www-backend
-    server web-server 54.224.230.69
-EOL
-
-# Restart HAProxy
-sudo service haproxy restart
-
-# Wait for HAProxy to restart
-sleep 2
-
-# Check if HAProxy is redirecting HTTP to HTTPS
-HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://shyakx.tech)
-
-# Compare the obtained HTTP status with the expected value
-EXPECTED_STATUS="301"
-
-if [ "$HTTP_STATUS" = "$EXPECTED_STATUS" ]; then
-    echo "HAProxy is redirecting HTTP to HTTPS"
-else
-    echo "HAProxy is not redirecting HTTP to HTTPS"
-    echo "Expected: $EXPECTED_STATUS"
-    echo "Got: $HTTP_STATUS"
-fi
+backend web-backend
+    redirect scheme https unless { ssl_fc }
+    balance roundrobin
+    server 5807-web-01 54.224.230.69:80 check
+    server 5807-web-02 54.196.173.188:80 check
+backend letsencrypt-backend
+   server letsencrypt 127.0.0.1:54321
